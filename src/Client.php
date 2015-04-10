@@ -1,6 +1,6 @@
 <?php
 
-namespace League\StatsD;
+namespace Overseer\Librato;
 
 use League\StatsD\Exception\ConnectionException;
 use League\StatsD\Exception\ConfigurationException;
@@ -54,12 +54,6 @@ class Client
      */
     protected $namespace = '';
 
-    /**
-     * Timeout for creating the socket connection
-     * @var null|float
-     */
-    protected $timeout;
-
 
     /**
      * Singleton Reference
@@ -77,16 +71,11 @@ class Client
 
     /**
      * Create a new instance
-     * @param string $instance_id
      * @return void
      */
     public function __construct($instance_id = null)
     {
         $this->instance_id = $instance_id ?: uniqid();
-
-        if (empty($this->timeout)) {
-            $this->timeout = ini_get('default_socket_timeout');
-        }
     }
 
 
@@ -120,9 +109,6 @@ class Client
         }
         if (isset($options['namespace'])) {
             $this->namespace = $options['namespace'];
-        }
-        if (isset($options['timeout'])) {
-            $this->timeout = $options['timeout'];
         }
         return $this;
     }
@@ -167,131 +153,82 @@ class Client
         return $this->message;
     }
 
-
-    /**
-     * Increment a metric
-     * @param  string|array $metrics Metric(s) to increment
-     * @param  int $delta Value to decrement the metric by
-     * @param  int $sampleRate Sample rate of metric
-     * @return Client This instance
-     */
-    public function increment($metrics, $delta = 1, $sampleRate = 1)
-    {
-        $metrics = (array) $metrics;
-        $data = array();
-        if ($sampleRate < 1) {
-            foreach ($metrics as $metric) {
-                if ((mt_rand() / mt_getrandmax()) <= $sampleRate) {
-                    $data[$metric] = $delta . '|c|@' . $sampleRate;
-                }
-            }
-        } else {
-            foreach ($metrics as $metric) {
-                $data[$metric] = $delta . '|c';
-            }
-        }
-        return $this->send($data);
-    }
-
-
-    /**
-     * Decrement a metric
-     * @param  string|array $metrics Metric(s) to decrement
-     * @param  int $delta Value to increment the metric by
-     * @param  int $sampleRate Sample rate of metric
-     * @return Client This instance
-     */
-    public function decrement($metrics, $delta = 1, $sampleRate = 1)
-    {
-        return $this->increment($metrics, 0 - $delta, $sampleRate);
-    }
-
-
-    /**
-     * Timing
-     * @param  string $metric Metric to track
-     * @param  float $time Time in milliseconds
-     * @return bool True if data transfer is successful
-     */
-    public function timing($metric, $time)
-    {
-        return $this->send(
-            array(
-                $metric => $time . '|ms'
-            )
-        );
-    }
-
-
-    /**
-     * Time a function
-     * @param  string $metric Metric to time
-     * @param  callable $func Function to record
-     * @return bool True if data transfer is successful
-     */
-    public function time($metric, $func)
-    {
-        $timer_start = microtime(true);
-        $func();
-        $timer_end = microtime(true);
-        $time = round(($timer_end - $timer_start) * 1000, 4);
-        return $this->timing($metric, $time);
-    }
-
-
     /**
      * Gauges
      * @param  string $metric Metric to gauge
-     * @param  int $value Set the value of the gauge
+     * @param  array $data The array data for the gauge
      * @return Client This instance
      */
-    public function gauge($metric, $value)
+    public function gauge($data)
     {
+        // Prefix the namespace
+        $prefix = $this->namespace ? $this->namespace . '.' : '';
+
+        // Send the actual data
         return $this->send(
             array(
-                $metric => $value . '|g'
+                "gauges" => array(
+                    array(
+                        "name" => isset($data['name']) ? $prefix . $data['name'] : "",
+                        "description" => isset($data['description']) ? $data['description'] : "",
+                        "value" => isset($data['value']) ? $data['value'] : ""
+                    )
+                )
             )
         );
     }
 
     /**
-     * Sets - count the number of unique values passed to a key
-     * @param $metric
-     * @param mixed $value
+     * Annotations
+     * @param  string $metric Metric to gauge
+     * @param  array $data Set the value of the gauge
      * @return Client This instance
      */
-    public function set($metric, $value)
+    public function annotation($data)
     {
+        // Prefix the namespace
+        $prefix = $this->namespace ? $this->namespace . '.' : '';
+
+        // Send the actual data
         return $this->send(
-            array(
-                $metric => $value . '|s'
+             array(
+                "annotations" => array(
+                    array(
+                        "name" => isset($data['name']) ? $prefix . $data['name'] : "",
+                        "description" => isset($data['description']) ? $data['description'] : "",
+                        "display_name" => isset($data['display_name']) ? $data['display_name'] : "",
+                        "title" => isset($data['display_name']) ? $data['display_name'] : "",
+                        "value" => isset($data['value']) ? $data['value'] : "",
+                        "start_time" => isset($data['start_time']) ? $data['start_time'] : "",
+                        "end_time" => isset($data['end_time']) ? $data['end_time'] : ""
+                    )
+                )
             )
         );
     }
 
-
     /**
-     * Send Data to StatsD Server
+     * Send Data to UDP Server
      * @param  array $data A list of messages to send to the server
      * @return Client This instance
      * @throws ConnectionException If there is a connection problem with the host
      */
     protected function send(array $data)
     {
-
-        $socket = @fsockopen('udp://' . $this->host, $this->port, $errno, $errstr, $this->timeout);
+        // Open a socket connection
+        $socket = @fsockopen('udp://' . $this->host, $this->port, $errno, $errstr);
         if (! $socket) {
             throw new ConnectionException($this, '(' . $errno . ') ' . $errstr);
         }
+
+        // Build the message data
         $this->messages = array();
-        $prefix = $this->namespace ? $this->namespace . '.' : '';
-        foreach ($data as $key => $value) {
-            $this->messages[] = $prefix . $key . ':' . $value;
-        }
+        $this->messages[] = json_encode($data);
         $this->message = implode("\n", $this->messages);
+
+        // Send it off
         @fwrite($socket, $this->message);
         fclose($socket);
         return $this;
-
     }
 }

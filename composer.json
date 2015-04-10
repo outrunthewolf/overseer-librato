@@ -1,18 +1,15 @@
 {
-    "name": "league/statsd",
-    "description": "A simple library for working with StatsD in PHP.",
+    "name": "overseer/librato",
+    "description": "A fork of the statsd php library customised to work with a librato UDP collector.",
     "keywords": [
         "library",
-        "statsd",
-        "graphite"
+        "librato",
+        "UDP"
     ],
-    "homepage": "https://github.com/thephpleague/statsd",
     "license": "MIT",
     "authors": [
         {
-            "name": "Marc Qualie",
-            "email": "marc@marcqualie.com",
-            "homepage": "http://marcqualie.com",
+            "name": "outrunthewolf",
             "role": "Developer"
         }
     ],

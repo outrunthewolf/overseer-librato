@@ -1,8 +1,8 @@
 <?php
 
-namespace League\StatsD\Exception;
+namespace Overseer\Librato\Exception;
 
-use League\StatsD\Client;
+use Overseer\Librato\Client;
 
 /**
  * Connection Exception Class
