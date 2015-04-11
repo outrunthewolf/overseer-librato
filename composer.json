@@ -19,8 +19,7 @@
     },
     "autoload": {
         "psr-4": {
-            "League\\StatsD\\": "src",
-            "League\\StatsD\\Test\\": "tests"
+            "Overseer\\Librato\\": "src"
         }
     }
 }

@@ -2,8 +2,8 @@
 
 namespace Overseer\Librato;
 
-use League\StatsD\Exception\ConnectionException;
-use League\StatsD\Exception\ConfigurationException;
+use Overseer\Librato\Exception\ConnectionException;
+use Overseer\Librato\Exception\ConfigurationException;
 
 /**
  * StatsD Client Class
