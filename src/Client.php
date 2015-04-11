@@ -194,11 +194,8 @@ class Client
              array(
                 "annotations" => array(
                     array(
-                        "name" => isset($data['name']) ? $prefix . $data['name'] : "",
                         "description" => isset($data['description']) ? $data['description'] : "",
-                        "display_name" => isset($data['display_name']) ? $data['display_name'] : "",
                         "title" => isset($data['title']) ? $data['title'] : "",
-                        "value" => isset($data['value']) ? $data['value'] : "",
                         "start_time" => isset($data['start_time']) ? $data['start_time'] : "",
                         "end_time" => isset($data['end_time']) ? $data['end_time'] : ""
                     )
