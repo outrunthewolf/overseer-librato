@@ -187,7 +187,7 @@ class Client
     public function annotation($data)
     {
         // Prefix the namespace
-        $prefix = $this->namespace ? $this->namespace . '.' : '';
+        $prefix = $this->namespace ? $this->namespace : '';
 
         // Send the actual data
         return $this->send(
@@ -197,7 +197,8 @@ class Client
                         "description" => isset($data['description']) ? $data['description'] : "",
                         "title" => isset($data['title']) ? $data['title'] : "",
                         "start_time" => isset($data['start_time']) ? $data['start_time'] : "",
-                        "end_time" => isset($data['end_time']) ? $data['end_time'] : ""
+                        "end_time" => isset($data['end_time']) ? $data['end_time'] : "",
+                        "source" => $prefix
                     )
                 )
             )
